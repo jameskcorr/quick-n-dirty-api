@@ -1,0 +1,27 @@
+{
+  "name": "quickndirtyapi",
+  "version": "0.1.0",
+  "description": "creates dynamic REST APIs based on your MongoDB structure",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jameskcorr/quick-n-dirty-api.git"
+  },
+  "keywords": [
+    "api",
+    "mongodb"
+  ],
+  "author": "James Corr",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jameskcorr/quick-n-dirty-api/issues"
+  },
+  "homepage": "https://github.com/jameskcorr/quick-n-dirty-api",
+  "devDependencies": {
+    "mongodb": "^1.4.30",
+    "mongoskin": "^1.4.12"
+  }
+}
