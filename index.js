@@ -1,7 +1,7 @@
 var mongoskin = require('mongoskin');
 var ObjectID = require('mongoskin').ObjectID;
 
-module.exports = function(app, dbPath) {
+module.exports = function (app, dbPath) {
 	var db = mongoskin.db('mongodb://@' + dbPath, {safe:true});
 	var collections;
 	db.collection("system.indexes").find({},{"ns":1}).toArray(function(e, results) {

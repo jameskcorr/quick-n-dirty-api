@@ -20,8 +20,8 @@
     "url": "https://github.com/jameskcorr/quick-n-dirty-api/issues"
   },
   "homepage": "https://github.com/jameskcorr/quick-n-dirty-api",
-  "devDependencies": {
-    "mongodb": "^1.4.30",
-    "mongoskin": "^1.4.12"
+  "dependencies": {
+    "mongodb": "1.4.30",
+    "mongoskin": "1.4.12"
   }
 }
