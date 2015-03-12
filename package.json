@@ -1,6 +1,6 @@
 {
   "name": "quickndirtyapi",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "creates dynamic REST APIs based on your MongoDB structure",
   "main": "index.js",
   "scripts": {
