@@ -53,7 +53,7 @@ There is no validation on input fields as each project has its own requirements.
 ## Dependencies
 
 - [mongodb](https://github.com/mongodb/node-mongodb-native): A node.js driver for MongoDB
-- [mongoskin](https://github.com/kissjs/node-mongoskin): The promise wrapper for node-mongodb-native
+- [body-parser](https://github.com/expressjs/body-parser): Node.js body parsing middleware
 
 ## License
 
