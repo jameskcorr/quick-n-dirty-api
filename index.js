@@ -1,79 +1,115 @@
-var mongoskin = require('mongoskin');
-var ObjectID = require('mongoskin').ObjectID;
+var mongodb = require('mongodb');
+var bodyParser = require('body-parser');
 
 module.exports = function(app, dbPath) {
-	db = mongoskin.db('mongodb://@' + dbPath, {safe:true});
-	var collections;
-	db.collection("system.indexes").find({},{"ns":1}).toArray(function(e, results) {
-		if (e) return next(e);
-		global.collections = new Array();
-		for (var i=0;i<results.length;i++) {
-			var collectionName = results[i].ns.substr(1).split('.');
-			(global.collections).push(collectionName[1]);
+
+	app.use(bodyParser.urlencoded({'extended':'true'}));
+	app.use(bodyParser.json());
+
+	var ObjectID = mongodb.ObjectID;
+	mongodb.MongoClient.connect('mongodb://@' + dbPath, {safe:true}, function(e, db) {
+
+		if (e) {
+			console.log(e);
+			return;
 		}
-		for (var i=0;i<(global.collections).length;i++) {
-			app.route('/' + global.collections[i])
-				.get(read)
-				.post(create);
-			app.route('/' + global.collections[i] + '/:id')
-				.get(read)
-				.put(update)
-				.delete(remove);
-		}
-	});
 
-	var create = function(req, cb) {
-		var url = req.route.path.substr(1).split('/');
-		var collection = (url.length == 3) ? url[2] : url[0];
-		db.collection(collection).insert(req.body, {}, function(e, results) {
-			if (e) return next(e);
-			var obj = {"_id": results[0]._id};
-			cb.status(200).json(Array(obj));
-		});
-	};
-
-	var read = function(req, cb) {
-		var url = req.route.path.substr(1).split('/');
-		var collection = url[0];
-		if (url.length == 2) {
-			db.collection(collection).findById(req.params.id, function(e, results) {
-				if (e) return next(e);
-				if (null === results) {
-					cb.status(400).send(collection + ' object (id: ' + req.params.id +') does not exist');
-				} else {
-					cb.json(Array(results)).status(200);
-				}
-			});
-		} else {
-			db.collection(collection).find({}).toArray(function(e, results) {
-				if (e) return next(e);
-				cb.json(results).status(200);
-			});
-		}
-	};
-
-	var update = function(req, cb) {
-		var url = req.route.path.substr(1).split('/');
-		var collection = url[0];
-		db.collection(collection).updateById(ObjectID(req.params.id), {$set:req.body}, function(e, results) {
-			if (e) return next(e);
-			cb.sendStatus(204);
-		});
-	};
-
-	var remove = function(req, cb) {
-		var url = req.route.path.substr(1).split('/');
-		var collection = url[0];
-		db.collection(collection).findById(req.params.id, function(e, results) {
-			if (e) return next(e);
-			if (null === results) {
-				cb.status(400).send(collection + ' object (id: ' + req.params.id +') does not exit');
+		var collections = [];
+		db.collection("system.indexes").find({},{"ns":1}).toArray(function(e, results) {
+			if (e) {
+				console.log(e);
 			} else {
-				db.collection(collection).removeById(req.params.id, function(e, results) {
-					if (e) return next(e);
-					cb.sendStatus(204);
-				});
+				for (var i=0;i<results.length;i++) {
+					var collectionName = results[i].ns.substr(1).split('.');
+					collections.push(collectionName[1]);
+				}
+				for (var i=0;i<collections.length;i++) {
+					app.route('/' + collections[i])
+						.get(read)
+						.post(create);
+					app.route('/' + collections[i] + '/:id')
+						.get(read)
+						.put(update)
+						.delete(remove);
+				}
 			}
 		});
-	};
+
+		var create = function(req, cb, next) {
+			var url = req.route.path.substr(1).split('/');
+			var collection = url[0];
+			db.collection(collection).insert(req.body, function(e, results) {
+				if (e) next(e);
+				else cb.status(200).json(results[0]);
+			});
+		};
+
+		var read = function(req, cb, next) {
+			var url = req.route.path.substr(1).split('/');
+			var collection = url[0];
+
+			var query = {};
+			if (url.length == 2) {
+				if (!ObjectID.isValid(req.params.id)) {
+					cb.status(404).send(notFound(collection, req.params.id));
+					return;
+				}
+				query._id = ObjectID(req.params.id);
+			}
+
+			db.collection(collection).find(query).toArray(function(e, results) {
+				if (e) {
+					next(e);
+				} else if (results.length < 1) {
+					if (url.length == 2) {
+						cb.status(404).send(notFound(collection, req.params.id));
+					} else {
+						cb.status(200).json(results);
+					}
+				} else {
+					cb.status(200).json(results);
+				}
+			});
+		};
+
+		var update = function(req, cb, next) {
+			var url = req.route.path.substr(1).split('/');
+			var collection = url[0];
+
+			if (!ObjectID.isValid(req.params.id)) {
+				cb.status(404).send(notFound(collection, req.params.id));
+				return;
+			}
+
+			db.collection(collection).update({_id:ObjectID(req.params.id)}, {$set:req.body}, function(e, results) {
+				if (e) next(e);
+				else cb.sendStatus(204);
+			});
+		};
+
+		var remove = function(req, cb, next) {
+			var url = req.route.path.substr(1).split('/');
+			var collection = url[0];
+
+			if (!ObjectID.isValid(req.params.id)) {
+				cb.status(404).send(notFound(collection, req.params.id));
+				return;
+			}
+
+			db.collection(collection).remove({_id:ObjectID(req.params.id)}, function(e, results) {
+				if (e) {
+					next(e);
+				} else if (results < 1) {
+					cb.status(404).send(notFound(collection, req.params.id));
+				} else {
+					cb.sendStatus(204);
+				}
+			});
+		};
+
+	});
 };
+
+function notFound(collection, id) {
+	return collection + ' object (id: ' + id +') does not exit';
+}
